@@ -31,7 +31,7 @@ dep 'webapp' do
   requires 'user exists', 'vhost enabled', 'webserver running'
   define_var :domain, :default => :username
   setup {
-    set :home_dir_base, "/srv/http"
+    set :home_dir_base, "/var/www"
   }
 end
 

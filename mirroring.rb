@@ -1,5 +1,5 @@
 dep 'mirror has assets' do
-  define_var :mirror_prefix, :default => '/srv/http' #L{ "http://#{var(:mirror_path).p.basename}" }
+  define_var :mirror_prefix, :default => '/var/www' #L{ "http://#{var(:mirror_path).p.basename}" }
   define_var :local_path, :default => :mirror_domain
   helper :scanned_urls do
     (var(:mirror_prefix) / var(:local_path)).glob("**/*").select {|f|
