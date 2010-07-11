@@ -46,6 +46,9 @@ end
 gem_source 'github source' do
   uri 'http://gems.github.com'
 end
+gem_source 'gemcutter source' do
+  uri 'http://gemcutter.org'
+end
 
 dep 'rubygems up to date' do
   requires 'rubygems installed'
