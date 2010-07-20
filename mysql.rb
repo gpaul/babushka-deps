@@ -30,7 +30,7 @@ end
 
 dep 'mysql.managed', :template => 'managed' do
   installs {
-    via :apt, %w[mysql-server libmysqlclient15-dev]
+    via :apt, %w[mysql-server libmysqlclient-dev]
     via :macports, 'mysql5-server'
   }
   provides 'mysql'
