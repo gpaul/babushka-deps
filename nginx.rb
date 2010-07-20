@@ -22,14 +22,14 @@ meta :nginx do
   }
 end
 
-nginx 'vhost enabled' do
-  requires 'vhost configured'
+dep 'vhost enabled.nginx' do
+  requires 'vhost configured.nginx'
   met? { nginx_conf_link_for(var(:domain)).exists? }
   meet { sudo "ln -sf '#{nginx_conf_for(var(:domain), 'conf')}' '#{nginx_conf_link_for(var(:domain))}'" }
   after { restart_nginx }
 end
 
-nginx 'vhost configured' do
+dep 'vhost configured.nginx' do
   define_var :www_aliases, :default => L{
     "#{var :domain} #{var :extra_domains}".split(' ').compact.map(&:strip).reject {|d|
       d.starts_with? '*.'
@@ -39,7 +39,7 @@ nginx 'vhost configured' do
       "www.#{d}"
     }.join(' ')
   }
-  requires 'webserver configured'
+  requires 'webserver configured.nginx'
   define_var :vhost_type, :default => 'passenger', :choices => %w[passenger proxy static]
   define_var :document_root, :default => L{ '/var/www' / var(:domain) }
   met? { nginx_conf_for(var(:domain), 'conf').exists? }
@@ -50,8 +50,8 @@ nginx 'vhost configured' do
   after { restart_nginx if nginx_conf_link_for(var(:domain)).exists? }
 end
 
-nginx 'self signed cert' do
-  requires 'webserver installed'
+dep 'self signed cert.nginx' do
+  requires 'webserver installed.src'
   met? { %w[key csr crt].all? {|ext| (nginx_cert_path / "#{var :domain}.#{ext}").exists? } }
   meet {
     in_dir nginx_cert_path, :create => "700", :sudo => true do
@@ -75,8 +75,8 @@ nginx 'self signed cert' do
   }
 end
 
-nginx 'webserver running' do
-  requires 'webserver configured', 'webserver startup script'
+dep 'webserver running.nginx' do
+  requires 'webserver configured.nginx', 'webserver startup script.nginx'
   met? {
     returning nginx_running? do |result|
       log "There is #{result ? 'something' : 'nothing'} listening on #{result ? result.scan(/[0-9.*]+[.:]80/).first : 'port 80'}"
@@ -90,8 +90,8 @@ nginx 'webserver running' do
   end
 end
 
-nginx 'webserver startup script' do
-  requires 'webserver installed'
+dep 'webserver startup script.nginx' do
+  requires 'webserver installed.src'
   on :linux do
     requires 'rcconf'
     met? { shell("rcconf --list").val_for('nginx') == 'on' }
@@ -109,8 +109,8 @@ nginx 'webserver startup script' do
   end
 end
 
-nginx 'webserver configured' do
-  requires 'webserver installed', 'www user and group'
+dep 'webserver configured.nginx' do
+  requires 'webserver installed.src', 'www user and group'
   define_var :nginx_prefix, :default => '/opt/nginx'
   met? {
     if babushka_config? nginx_conf
@@ -130,7 +130,7 @@ nginx 'webserver configured' do
 end
 
 dep 'passenger helper_server' do
-  requires 'passenger', 'build tools'
+  requires 'passenger.gem', 'build tools'
   met? {
     (Babushka::GemHelper.gem_path_for('passenger') / 'ext/nginx/HelperServer').exists?
   }
@@ -141,7 +141,7 @@ dep 'passenger helper_server' do
   }
 end
 
-src 'webserver installed' do
+dep 'webserver installed.src' do
   requires 'passenger helper_server', 'pcre', 'libssl headers', 'zlib headers'
   merge :versions, {:nginx => '0.7.65', :nginx_upload_module => '2.0.12'}
   source "http://nginx.org/download/nginx-#{var(:versions)[:nginx]}.tar.gz"
