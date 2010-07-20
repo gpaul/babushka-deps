@@ -1,5 +1,7 @@
 dep 'existing mysql db' do
-  requires 'mysql db exists'
+  requires 'mysql configured'
+  met? { mysql("SHOW DATABASES").split("\n")[1..-1].any? {|l| /\b#{var :db_name}\b/ =~ l } }
+  meet { mysql "CREATE DATABASE #{var :db_name}" }
 end
 
 
