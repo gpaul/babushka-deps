@@ -1,3 +1,8 @@
+dep 'existing mysql db' do
+  requires 'mysql db exists'
+end
+
+
 dep 'mysql.gem' do
   requires 'mysql.managed'
   installs 'mysql'
