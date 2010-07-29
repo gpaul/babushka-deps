@@ -12,7 +12,7 @@ dep 'user setup' do
 end
 
 dep 'rails app' do
-  requires 'webapp', 'passenger deploy repo', 'gems installed', 'migrated db'
+  requires 'webapp', 'passenger deploy repo', 'app bundled', 'migrated db'
   define_var :rails_env, :default => 'production'
   define_var :rails_root, :default => '~/current', :type => :path
   setup {
@@ -37,7 +37,7 @@ end
 
 dep 'core software' do
   requires {
-    on :linux, 'vim', 'curl', 'htop', 'jnettop', 'screen', 'nmap', 'tree'
-    on :osx, 'curl', 'jnettop', 'nmap'
+    on :linux, 'vim.managed', 'curl.managed', 'htop.managed', 'jnettop.managed', 'screen.managed', 'nmap.managed', 'tree.managed'
+    on :osx, 'curl.managed', 'htop.managed', 'jnettop.managed', 'nmap.managed', 'tree.managed'
   }
 end

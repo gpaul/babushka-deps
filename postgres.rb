@@ -1,5 +1,5 @@
 dep 'existing postgres db' do
-  requires 'postgres.gem', 'postgres access'
+  requires 'postgres access'
   met? {
     !shell("psql -l") {|shell|
       shell.stdout.split("\n").grep(/^\s*#{var :db_name}\s+\|/)
@@ -10,14 +10,13 @@ dep 'existing postgres db' do
   }
 end
 
-dep 'postgres.gem' do
+dep 'pg.gem' do
   requires 'postgres.managed'
-  installs 'pg'
   provides []
 end
 
 dep 'postgres access' do
-  requires 'postgres software', 'user exists'
+  requires 'postgres.managed', 'user exists'
   met? { !sudo("echo '\\du' | #{which 'psql'}", :as => 'postgres').split("\n").grep(/^\W*\b#{var :username}\b/).empty? }
   meet { sudo "createuser -SdR #{var :username}", :as => 'postgres' }
 end
@@ -40,7 +39,7 @@ dep 'postgres backups' do
   }
 end
 
-dep 'postgres', :template => 'managed' do
+dep 'postgres.managed' do
   installs {
     via :macports, 'postgresql83-server'
     via :apt, %w[postgresql postgresql-client libpq-dev]

@@ -15,13 +15,13 @@ dep 'hostname', :for => :linux do
 end
 
 dep 'secured ssh logins' do
-  requires 'sshd', 'sed'
+  requires 'sshd.managed', 'sed.managed'
   met? {
     # -o NumberOfPasswordPrompts=0
     output = failable_shell('ssh -o StrictHostKeyChecking=no -o PasswordAuthentication=no nonexistentuser@localhost').stderr
     if output.downcase['connection refused']
       log_ok "sshd doesn't seem to be running."
-    elsif (auth_methods = output.scan(/\((.*)\)/).join.split(/[^a-z]+/)).empty?
+    elsif (auth_methods = output.scan(/Permission denied \((.*)\)\./).join.split(/[^a-z]+/)).empty?
       log_error "sshd returned unexpected output."
     else
       returning auth_methods == %w[publickey] do |result|
@@ -37,7 +37,7 @@ dep 'secured ssh logins' do
 end
 
 dep 'lax host key checking' do
-  requires 'sed'
+  requires 'sed.managed'
   met? { grep /^StrictHostKeyChecking[ \t]+no/, ssh_conf_path(:ssh) }
   meet { change_with_sed 'StrictHostKeyChecking', 'yes', 'no', ssh_conf_path(:ssh) }
 end
