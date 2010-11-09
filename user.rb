@@ -5,7 +5,6 @@ dep 'user shell setup' do
 end
 
 dep 'passwordless ssh logins' do
-  requires 'user exists'
   met? { grep var(:your_ssh_public_key), '~/.ssh/authorized_keys' }
   before { shell 'mkdir -p ~/.ssh; chmod 700 ~/.ssh' }
   meet { append_to_file var(:your_ssh_public_key), "~/.ssh/authorized_keys" }
@@ -24,6 +23,11 @@ dep 'dot files' do
 end
 
 dep 'user exists' do
+  setup {
+    define_var :home_dir_base, :default => L{
+      var(:username)['.'] ? '/srv/http' : '/home'
+    }
+  }
   on :osx do
     met? { !shell("dscl . -list /Users").split("\n").grep(var(:username)).empty? }
     meet {

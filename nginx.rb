@@ -55,7 +55,7 @@ dep 'self signed cert.nginx' do
   met? { %w[key csr crt].all? {|ext| (nginx_cert_path / "#{var :domain}.#{ext}").exists? } }
   meet {
     in_dir nginx_cert_path, :create => "700", :sudo => true do
-      log_shell("generating private key", "openssl genrsa -out #{var :domain}.key 1024", :sudo => true) and
+      log_shell("generating private key", "openssl genrsa -out #{var :domain}.key 2048", :sudo => true) and
       log_shell("generating certificate", "openssl req -new -key #{var :domain}.key -out #{var :domain}.csr",
         :sudo => true, :input => [
           var(:country, :default => 'AU'),
@@ -101,7 +101,7 @@ dep 'webserver startup script.nginx' do
     }
   end
   on :osx do
-    met? { !sudo('launchctl list').grep(/org\.nginx/).empty? }
+    met? { !sudo('launchctl list').split("\n").grep(/org\.nginx/).empty? }
     meet {
       render_erb 'nginx/nginx.launchd.erb', :to => '/Library/LaunchDaemons/org.nginx.plist', :sudo => true
       sudo 'launchctl load -w /Library/LaunchDaemons/org.nginx.plist'
@@ -129,10 +129,18 @@ dep 'webserver configured.nginx' do
   }
 end
 
-dep 'passenger helper_server' do
-  requires 'passenger.gem', 'build tools'
+dep 'passenger built' do
+  requires 'passenger.gem', 'build tools', 'curl.managed'
   met? {
-    (Babushka::GemHelper.gem_path_for('passenger') / 'ext/nginx/HelperServer').exists?
+    %W[
+      ./agents/nginx/PassengerHelperAgent
+      ./agents/PassengerLoggingAgent
+      ./agents/PassengerWatchdog
+      ./ext/common/libpassenger_common.a
+      ./ext/ruby/#{Babushka::GemHelper.ruby_binary_slug}/passenger_native_support.#{Babushka::Base.host.library_ext}
+    ].all? {|obj|
+      (Babushka::GemHelper.gem_path_for('passenger') / obj).exists?
+    }
   }
   meet {
     in_dir Babushka::GemHelper.gem_path_for('passenger') do
@@ -142,8 +150,8 @@ dep 'passenger helper_server' do
 end
 
 dep 'webserver installed.src' do
-  requires 'passenger helper_server', 'pcre.managed', 'libssl headers.managed', 'zlib headers.managed'
-  merge :versions, {:nginx => '0.7.65', :nginx_upload_module => '2.0.12'}
+  requires 'passenger built', 'pcre.managed', 'libssl headers.managed', 'zlib headers.managed'
+  merge :versions, {:nginx => '0.7.67', :nginx_upload_module => '2.2.0'}
   source "http://nginx.org/download/nginx-#{var(:versions)[:nginx]}.tar.gz"
   extra_source "http://www.grid.net.ru/nginx/download/nginx_upload_module-#{var(:versions)[:nginx_upload_module]}.tar.gz"
   configure_args "--with-pcre", "--with-http_ssl_module",
