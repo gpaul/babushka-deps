@@ -25,13 +25,13 @@ dep 'postgres backups' do
   requires 'postgres.managed'
   met? { shell "test -x /etc/cron.hourly/postgres_offsite_backup" }
   before {
-    returning sudo("ssh #{var :offsite_host} 'true'") do |result|
+    sudo("ssh #{var :offsite_host} 'true'").tap {|result|
       if result
         log_ok "publickey login to #{var :offsite_host}"
       else
         log_error "You need to add root's public key to #{var :offsite_host}:~/.ssh/authorized_keys."
       end
-    end
+    }
   }
   meet {
     render_erb 'postgres/offsite_backup.rb.erb', :to => '/usr/local/bin/postgres_offsite_backup', :perms => '755', :sudo => true
@@ -40,16 +40,13 @@ dep 'postgres backups' do
 end
 
 dep 'postgres.managed' do
+  requires {
+    on :apt, 'set.locale', 'ppa postgres.apt_repo'
+    on :brew, 'set.locale'
+  }
   installs {
-    via :macports, 'postgresql83-server'
     via :apt, %w[postgresql postgresql-client libpq-dev]
     via :brew, 'postgresql'
   }
-  provides 'psql'
-  after :on => :osx do
-    sudo "mkdir -p /opt/local/var/db/postgresql83/defaultdb" and
-    sudo "chown postgres:postgres /opt/local/var/db/postgresql83/defaultdb" and
-    sudo "su postgres -c '/opt/local/lib/postgresql83/bin/initdb -D /opt/local/var/db/postgresql83/defaultdb'" and
-    sudo "launchctl load -w /Library/LaunchDaemons/org.macports.postgresql83-server.plist"
-  end
+  provides 'psql ~> 9.0.0'
 end

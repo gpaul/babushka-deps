@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-# <%= generated_by_babushka %>
 
 require 'fileutils'
 
@@ -50,6 +49,7 @@ class PSQLBackup
     Dir.chdir path do
       dump_dbs and git_commit
       git_push
+      git_gc
     end
   end
 

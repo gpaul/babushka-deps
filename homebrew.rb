@@ -1,7 +1,6 @@
 meta :homebrew_mirror do
-  template {
-    helper :urls do
-      script = %Q{
+  def urls
+    script = %Q{
 #!/usr/bin/env ruby
 
 prefix = `brew --prefix`.chomp
@@ -20,23 +19,22 @@ classes_to_skip = %w[AspellLang COREUTILS_ALIASES DICT_CONF Rational SOLR_START_
 urls = (Class.constants - before - classes_to_skip).reject {|k|
   k =~ /DownloadStrategy$/
 }.map {|k|
-  eval(k).new
+  eval(k.to_s)
 }.select {|k|
   k.respond_to? :url
 }.map {|k|
   k.url
 }
 puts urls * "\n"
-      }
-      shell("ruby", :input => script).split("\n").select {|url| url[/^(https?|ftp):/] }.uniq
-    end
-  }
+    }
+    shell("ruby", :input => script).split("\n").select {|url| url[/^(https?|ftp):/] }.uniq
+  end
 end
 
 dep 'mirrored.homebrew_mirror' do
   define_var :homebrew_downloads, :default => '/srv/http/files'
   define_var :homebrew_vhost_root, :default => '/srv/http/homebrew'
-  helper :missing_urls do
+  def missing_urls
     urls.tap {|urls| log "#{urls.length} URLs in the homebrew database." }.reject {|url|
       path = var(:homebrew_downloads) / File.basename(url)
       path.exists? && !path.empty?
@@ -45,14 +43,20 @@ dep 'mirrored.homebrew_mirror' do
   met? { missing_urls.empty? }
   meet {
     in_dir var(:homebrew_downloads) do
-      missing_urls.each {|url| Babushka::Archive.download url }
+      missing_urls.each {|url|
+        begin
+          Babushka::Resource.download url
+        rescue StandardError => ex
+          log_error ex.inspect
+        end
+      }
     end
   }
 end
 
 dep 'linked.homebrew_mirror' do
   requires 'mirrored.homebrew_mirror'
-  helper :unlinked_urls do
+  def unlinked_urls
     urls.tap {|urls| log "#{urls.length} URLs in the homebrew download pool." }.select {|url|
       path = var(:homebrew_downloads) / File.basename(url)
       link = var(:homebrew_vhost_root) / url.sub(/^[a-z]+:\/\/[^\/]+\//, '')

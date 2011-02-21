@@ -3,7 +3,7 @@ def ssh_conf_path file
 end
 
 dep 'hostname', :for => :linux do
-  helper :hostname do
+  def hostname
     shell 'hostname -f'
   end
   met? {
@@ -27,9 +27,9 @@ dep 'secured ssh logins' do
     elsif (auth_methods = output.scan(/Permission denied \((.*)\)\./).join.split(/[^a-z]+/)).empty?
       log_error "sshd returned unexpected output."
     else
-      returning auth_methods == %w[publickey] do |result|
+      (auth_methods == %w[publickey]).tap {|result|
         log_verbose "sshd #{'only ' if result}accepts #{auth_methods.to_list} logins.", :as => (result ? :ok : :error)
-      end
+      }
     end
   }
   meet {

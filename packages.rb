@@ -1,5 +1,6 @@
+dep 'bison.managed'
 dep 'bundler.gem' do
-  installs 'bundler' => '>= 1.0.0.rc.5'
+  installs 'bundler 1.0.9'
   provides 'bundle'
 end
 dep 'coreutils.managed', :for => :osx do
@@ -10,7 +11,9 @@ dep 'coreutils.managed', :for => :osx do
     end
   end
 end
-dep 'erlang.managed'
+dep 'erlang.managed' do
+  provides 'erl', 'erlc'
+end
 dep 'freeimage.managed' do
   installs {
     via :apt, %w[libfreeimage3 libfreeimage-dev]
@@ -20,7 +23,13 @@ dep 'freeimage.managed' do
   provides []
 end
 dep 'gettext.managed'
+dep 'git-smart.gem' do
+  provides %w[git-smart-log git-smart-merge git-smart-pull]
+end
 dep 'htop.managed'
+dep 'imagemagick.managed' do
+  provides %w[compare animate convert composite conjure import identify stream display montage mogrify]
+end
 dep 'image_science.gem' do
   requires 'freeimage.managed'
   provides []
@@ -32,12 +41,22 @@ end
 dep 'jnettop.managed' do
   installs { via :apt, 'jnettop' }
 end
+dep 'readline headers.managed' do
+  installs {
+    via :apt, 'libreadline5-dev'
+  }
+  provides []
+end
 dep 'libssl headers.managed' do
   installs { via :apt, 'libssl-dev' }
   provides []
 end
 dep 'libxml.managed' do
   installs { via :apt, 'libxml2-dev' }
+  provides []
+end
+dep 'libxslt.managed' do
+  installs { via :apt, 'libxslt1-dev' }
   provides []
 end
 dep 'mdns.managed' do
@@ -57,7 +76,7 @@ end
 dep 'nmap.managed'
 dep 'oniguruma.managed'
 dep 'passenger.gem' do
-  installs 'passenger' => '>= 3.0.0.pre4'
+  installs 'passenger ~> 3.0'
   provides 'passenger-install-nginx-module'
 end
 dep 'pcre.managed' do

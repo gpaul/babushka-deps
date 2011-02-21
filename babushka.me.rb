@@ -1,20 +1,16 @@
 meta :bab_tarball do
-  template {
-    helper :uri do
-      'git://github.com/benhoskings/babushka.git'
-    end
-    helper :latest do
-      var(:tarball_path) / 'LATEST'
-    end
-    helper :tarball_for do |commit_id|
-      var(:tarball_path) / "babushka-#{commit_id}.tgz"
-    end
-    helper :current_head do
-      in_build_dir 'babushka' do
-        `git rev-parse --short HEAD`.strip
-      end
-    end
-  }
+  def uri
+    'git://github.com/benhoskings/babushka.git'
+  end
+  def latest
+    var(:tarball_path) / 'LATEST'
+  end
+  def repo
+    Babushka::GitRepo.new(Babushka::BuildPrefix / 'babushka')
+  end
+  def tarball
+    var(:tarball_path) / "babushka-#{repo.current_head}.tgz"
+  end
 end
 
 dep 'babushka tarball' do
@@ -26,45 +22,39 @@ end
 
 dep 'LATEST.bab_tarball' do
   met? {
-    latest.exists? && (latest.read.strip == current_head)
+    latest.exists? && (latest.read.strip == repo.current_head)
   }
   meet {
-    shell "echo #{current_head} > '#{latest}'"
+    shell "echo #{repo.current_head} > '#{latest}'"
   }
 end
 
 dep 'linked.bab_tarball' do
   requires 'exists.bab_tarball'
-  setup {
-    git uri, :dir => 'babushka'
-  }
+  setup { git uri }
   met? {
-    (var(:tarball_path) / 'babushka.tgz').readlink == tarball_for(current_head)
+    (var(:tarball_path) / 'babushka.tgz').readlink == tarball
   }
   meet {
-    in_dir var(:tarball_path), :create => true do
-      shell "ln -sf #{tarball_for(current_head)} babushka.tgz"
-    end
+    shell "ln -sf #{tarball} babushka.tgz", :dir => var(:tarball_path), :create => true
   }
 end
 
 dep 'exists.bab_tarball' do
   met? {
-    shell "tar -t -f #{tarball_for(current_head)}"
+    shell "tar -t -f #{tarball}"
   }
-  before { shell "mkdir -p #{tarball_for(current_head).parent}" }
+  before { shell "mkdir -p #{tarball.parent}" }
   meet {
-    in_build_dir do
-      shell "tar -zcv --exclude .git -f '#{tarball_for(current_head)}' babushka/"
-    end
+    shell "tar -zcv --exclude .git -f '#{tarball}' babushka/", :dir => Babushka::BuildPrefix
   }
 end
 
 dep 'babushka.me db dump' do
-  helper :db_dump_path do
+  def db_dump_path
     './public/db'.p
   end
-  helper :db_dump do
+  def db_dump
     db_dump_path / 'babushka.me.psql'
   end
   met? {

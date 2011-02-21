@@ -1,9 +1,9 @@
 dep 'system' do
-  requires 'hostname', 'secured ssh logins', 'lax host key checking', 'admins can sudo', 'tmp cleaning grace period', 'core software'
+  requires 'set.locale', 'hostname', 'secured ssh logins', 'lax host key checking', 'admins can sudo', 'tmp cleaning grace period', 'core software'
 end
 
 dep 'user setup' do
-  requires 'dot files', 'passwordless ssh logins', 'public key'
+  requires 'dot files', 'passwordless ssh logins', 'public key', 'zsh'
   define_var :username, :default => shell('whoami')
   setup {
     set :username, shell('whoami')
@@ -11,10 +11,11 @@ dep 'user setup' do
 end
 
 dep 'rails app' do
-  requires 'webapp', 'passenger deploy repo', 'app bundled', 'migrated db'
+  requires 'webapp', 'web repo', 'app bundled', 'migrated db'
   define_var :rails_env, :default => 'production'
   define_var :rails_root, :default => '~/current', :type => :path
   setup {
+    set :username, shell('whoami')
     set :vhost_type, 'passenger'
   }
 end
